@@ -259,7 +259,7 @@ export default function OrderItem({ item, groupId, showIndividualControls = fals
                         <FireHoldToggle
                             isFired={item.isFired}
                             onToggle={() => toggleItemStatus(item.id)}
-                            disabled={!isEditable && !item.isSent}
+                            disabled={!isEditable}
                         />
                     </div>
                 )}

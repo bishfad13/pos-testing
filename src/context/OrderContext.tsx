@@ -65,6 +65,7 @@ interface OrderContextType {
     toggleGroupSelectionMode: (isActive: boolean, groupId?: string) => void;
     separateGroupFireHold: (groupId: string) => void;
     combineGroupFireHold: (groupId: string) => void;
+    setGroupFireStatus: (groupId: string, isFired: boolean) => void;
     // Kitchen Interaction
     fireToKitchen: () => void;
     fireSuccess: boolean; // For triggering snackbar
@@ -299,9 +300,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     };
 
     const toggleItemStatus = (itemId: string) => {
-        // We need to find the group and item first.
-        // PROMPT: "when the user click the fire toggle at the hold item, it will go back to the selected group content state"
-
+        // ... existing logic ...
         let targetGroup: OrderGroup | undefined;
         let targetItem: OrderItem | undefined;
 
@@ -332,6 +331,28 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                 };
             }));
         }
+    };
+
+    const setGroupFireStatus = (groupId: string, isFired: boolean) => {
+        setActiveGroupId(groupId);
+        setOrderGroups(prev => prev.map(group => {
+            if (group.id !== groupId) return group;
+
+            // Only update items that can be edited (e.g. not already fired/sent and locked)
+            // Actually, context handles "isFired" toggle.
+            // We should just update 'isFired' for all items in the group.
+            // Items that are "hasBeenFired" (finalized) shouldn't be toggleable typically?
+            // But 'isFired' controls the INTENT.
+
+            return {
+                ...group,
+                items: group.items.map(item => {
+                    // Don't touch if finalized (hasBeenFired)
+                    if (item.hasBeenFired) return item;
+                    return { ...item, isFired: isFired };
+                })
+            };
+        }));
     };
 
     const removeSelectedItems = () => {
@@ -507,14 +528,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                     // Empty groups don't block
                     if (prevGroup.items.length === 0) continue;
 
-                    // Get only items that have been sent to kitchen
-                    const sentItems = prevGroup.items.filter(item => item.isSent);
-
-                    // If a previous group has NO sent items (but HAS items), it blocks
-                    if (sentItems.length === 0) return false;
-
-                    // Check if ALL sent items have been FIRED to kitchen
-                    const isGroupCompleted = sentItems.every(item => item.hasBeenFired);
+                    // STRICT RULE: ALL items must be fired
+                    const isGroupCompleted = prevGroup.items.every(item => item.hasBeenFired);
                     if (!isGroupCompleted) return false;
                 }
 
@@ -573,7 +588,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
         // Check ALL previous groups
         // All previous groups must be "completed" before this one unlocks
-        // A group is "completed" if it has SENT items AND all SENT items are fired
+        // A group is "completed" if it has items AND all items are fired
         for (let i = 0; i < index; i++) {
             const prevGroup = orderGroups[i];
 
@@ -583,16 +598,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                 continue;
             }
 
-            // Get only items that have been sent to kitchen
-            const sentItems = prevGroup.items.filter(item => item.isSent);
-
-            // If a previous group has NO sent items (but HAS items in draft), it blocks
-            if (sentItems.length === 0 && prevGroup.items.length > 0) {
-                return false;
-            }
-
-            // Check if all SENT items have been FIRED to kitchen
-            const isGroupCompleted = sentItems.every(item => item.hasBeenFired);
+            // STRICT RULE: ALL items must be fired
+            const isGroupCompleted = prevGroup.items.every(item => item.hasBeenFired);
             if (!isGroupCompleted) {
                 return false; // Found an incomplete previous group, so current group is locked
             }
@@ -642,7 +649,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             setFireSuccess,
             canEditGroup,
             lastAddedGroupId,
-            clearLastAddedGroupId
+            clearLastAddedGroupId,
+            setGroupFireStatus
         }}>
             {children}
         </OrderContext.Provider>

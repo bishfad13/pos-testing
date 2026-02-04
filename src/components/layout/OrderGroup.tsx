@@ -30,11 +30,11 @@ export default function OrderGroup({ group, isExpanded, isActive = false, onTogg
     const {
         reorderItems,
         setIsDragging,
-        toggleItemStatus,
         isGroupSelectionMode,
         selectedGroupId,
         toggleGroupSelectionMode,
-        canEditGroup
+        canEditGroup,
+        setGroupFireStatus
     } = useOrder();
     const itemCount = group.items.reduce((acc, item) => acc + item.qty, 0);
 
@@ -60,11 +60,7 @@ export default function OrderGroup({ group, isExpanded, isActive = false, onTogg
 
     const handleBulkFire = (status: boolean) => {
         if (!isEditable) return;
-        group.items.forEach(item => {
-            if (item.isFired !== status) {
-                toggleItemStatus(item.id);
-            }
-        });
+        setGroupFireStatus(group.id, status);
     };
 
     // --- Long Press Handlers for Group Header ---
