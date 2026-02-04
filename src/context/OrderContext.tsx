@@ -146,10 +146,14 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
         // Check if group is editable. If not, items default to Hold (isFired: false)
         const isEditable = canEditGroup(activeGroupId);
-        const defaultFiredState = isEditable;
 
         setOrderGroups(prev => prev.map(group => {
             if (group.id !== activeGroupId) return group;
+
+            // Inheritance logic: if in combined mode, new item follows group's derived state
+            // If group is empty or in distributed mode, use default isEditable state
+            const isGroupCurrentlyFired = group.items.length > 0 && group.items.every(i => i.isFired);
+            const initialFiredState = group.hasDistributedToggles ? isEditable : (group.items.length === 0 ? isEditable : isGroupCurrentlyFired);
 
             // Check if same product exists
             const existingItemIndex = group.items.findIndex(item =>
@@ -173,7 +177,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                 ...product,
                 id: Date.now().toString(),
                 qty: 1,
-                isFired: defaultFiredState
+                isFired: initialFiredState
             };
             return { ...group, items: [...group.items, newItem] };
         }));
@@ -181,23 +185,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
     const addItemToCategory = (product: Omit<OrderItem, 'id' | 'qty'>, categoryId: string) => {
         // Map category to group ID
-        // Assuming simple mapping for now: category name -> lower case match or direct map
-        // Categories: "Appetizer", "Main Course", "Desserts"
-        // Groups: "appetizer", "main", "dessert"
-
-        // This mapping logic should ideally be robust. 
-        // Let's normalize inputs.
         let targetGroupId = '';
         const catLower = categoryId.toLowerCase();
 
         if (catLower.includes('appetizer')) targetGroupId = 'appetizer';
         else if (catLower.includes('main')) targetGroupId = 'main';
         else if (catLower.includes('dessert')) targetGroupId = 'dessert';
-        else {
-            // Fallback or error?
-            // Determine fallback.
-            targetGroupId = 'main'; // default?
-        }
+        else targetGroupId = 'main';
 
         // Select the group and set it as the last added group for scroll trigger
         selectGroup(targetGroupId);
@@ -205,10 +199,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
         // Check if group is editable. If not, items default to Hold (isFired: false)
         const isEditable = canEditGroup(targetGroupId);
-        const defaultFiredState = isEditable;
 
         setOrderGroups(prev => prev.map(group => {
             if (group.id !== targetGroupId) return group;
+
+            // Inheritance logic: if in combined mode, new item follows group's derived state
+            const isGroupCurrentlyFired = group.items.length > 0 && group.items.every(i => i.isFired);
+            const initialFiredState = group.hasDistributedToggles ? isEditable : (group.items.length === 0 ? isEditable : isGroupCurrentlyFired);
 
             // Check if same product exists (productId, variantName, note)
             // BUT only combine if the existing item has NOT been sent to kitchen
@@ -235,7 +232,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                 ...product,
                 id: Date.now().toString(), // unique instance
                 qty: 1,
-                isFired: defaultFiredState // Respect validation logic
+                isFired: initialFiredState // Respect group's current state in combined mode
             };
             return { ...group, items: [...group.items, newItem] };
         }));
@@ -337,12 +334,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         setActiveGroupId(groupId);
         setOrderGroups(prev => prev.map(group => {
             if (group.id !== groupId) return group;
-
-            // Only update items that can be edited (e.g. not already fired/sent and locked)
-            // Actually, context handles "isFired" toggle.
-            // We should just update 'isFired' for all items in the group.
-            // Items that are "hasBeenFired" (finalized) shouldn't be toggleable typically?
-            // But 'isFired' controls the INTENT.
 
             return {
                 ...group,
@@ -500,7 +491,18 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const combineGroupFireHold = (groupId: string) => {
         setOrderGroups(prev => prev.map(group => {
             if (group.id !== groupId) return group;
-            return { ...group, hasDistributedToggles: false };
+
+            // Unify item states: everything must follow the latest state of the content group when it combined toggle
+            const isGroupFired = group.items.length > 0 && group.items.every(item => item.isFired);
+
+            return {
+                ...group,
+                hasDistributedToggles: false,
+                items: group.items.map(item => ({
+                    ...item,
+                    isFired: item.hasBeenFired ? item.isFired : isGroupFired
+                }))
+            };
         }));
         toggleGroupSelectionMode(false);
     };
