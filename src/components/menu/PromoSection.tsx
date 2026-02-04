@@ -1,5 +1,5 @@
-
 import { useOrder } from '../../context/OrderContext';
+import { useSnackbar } from '../../context/SnackbarContext';
 
 interface PromoCardProps {
     title: string;
@@ -25,6 +25,7 @@ function PromoCard({ title, price, originalPrice, onClick }: PromoCardProps) {
 
 export default function PromoSection() {
     const { addItemToActiveGroup } = useOrder();
+    const { showSnackbar } = useSnackbar();
 
     const promos = [
         { title: "Kopi Panas Terbaik", price: "Rp45.000", originalPrice: "Rp35.000", numericPrice: 45000 },
@@ -41,12 +42,15 @@ export default function PromoSection() {
                     <PromoCard
                         key={i}
                         {...promo}
-                        onClick={() => addItemToActiveGroup({
-                            name: promo.title,
-                            price: promo.numericPrice,
-                            productId: `promo-${i}`,
-                            variantName: 'Medium'
-                        })}
+                        onClick={() => {
+                            addItemToActiveGroup({
+                                name: promo.title,
+                                price: promo.numericPrice,
+                                productId: `promo-${i}`,
+                                variantName: 'Medium'
+                            });
+                            showSnackbar('Item has been added to cart');
+                        }}
                     />
                 ))}
             </div>

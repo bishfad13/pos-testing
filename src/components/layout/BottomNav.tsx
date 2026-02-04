@@ -1,56 +1,78 @@
-import { LayoutDashboard, Menu, Grid2X2, User, MoreHorizontal } from 'lucide-react';
-import NavButton from './NavButton';
+import { LayoutDashboard, Menu, Grid2X2, MoreHorizontal, ReceiptText, Zap } from 'lucide-react';
 import { useState } from 'react';
+import NavigationBar from '../common/NavigationBar';
+import NavigationBarItem from '../common/NavigationBarItem';
 
 export default function BottomNav() {
     const [activeTab, setActiveTab] = useState('Menu');
+    const [activeAction, setActiveAction] = useState('');
 
     return (
-        <div className="w-full h-20 bg-white border-t border-gray-100 px-8 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative z-30">
-            {/* Left Section: Dashboard, Menu, Table, User, More */}
-            <div className="flex items-center gap-4">
-                <NavButton
-                    icon={<LayoutDashboard className="w-5 h-5" />}
-                    label="Dashboard"
-                    isActive={activeTab === 'Dashboard'}
-                    onClick={() => setActiveTab('Dashboard')}
-                />
-                <NavButton
-                    icon={<Menu className="w-5 h-5" />}
-                    label="Menu"
-                    isActive={activeTab === 'Menu'}
-                    onClick={() => setActiveTab('Menu')}
-                />
-                <NavButton
-                    icon={<Grid2X2 className="w-5 h-5" />}
-                    label="Table"
-                    isActive={activeTab === 'Table'}
-                    onClick={() => setActiveTab('Table')}
-                />
-                <div className="w-px h-8 bg-gray-200 mx-2" /> {/* Divider */}
-                <div className="flex items-center gap-2 text-text-secondary font-medium px-2">
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5" />
-                    </div>
-                    <span>Jack Johnson</span>
-                </div>
-                <NavButton
-                    icon={<MoreHorizontal className="w-5 h-5" />}
-                    label="More"
-                    isActive={activeTab === 'More'}
-                    onClick={() => setActiveTab('More')}
-                />
-            </div>
+        <NavigationBar
+            rightActions={
+                <>
+                    <NavigationBarItem
+                        icon={<ReceiptText className="size-5" />}
+                        label="Bill"
+                        showIcon={false}
+                        isActive={activeAction === 'Bill'}
+                        onClick={() => setActiveAction('Bill')}
+                    />
+                    <NavigationBarItem
+                        icon={<Zap className="size-5" />}
+                        label="Action"
+                        showIcon={false}
+                        disabled={true}
+                        isActive={activeAction === 'Action'}
+                        onClick={() => setActiveAction('Action')}
+                    />
+                </>
+            }
+        >
+            {/* Primary Nav Items */}
+            <NavigationBarItem
+                icon={<LayoutDashboard className="size-5" />}
+                label="Dashboard"
+                showIcon={false}
+                disabled={true}
+                isActive={activeTab === 'Dashboard'}
+                onClick={() => setActiveTab('Dashboard')}
+            />
+            <NavigationBarItem
+                icon={<Menu className="size-5" />}
+                label="Menu"
+                showIcon={false}
+                isActive={activeTab === 'Menu'}
+                onClick={() => setActiveTab('Menu')}
+            />
+            <NavigationBarItem
+                icon={<Grid2X2 className="size-5" />}
+                label="Table"
+                showIcon={false}
+                disabled={true}
+                isActive={activeTab === 'Table'}
+                onClick={() => setActiveTab('Table')}
+            />
 
-            {/* Right Section: Bill, Action */}
-            <div className="flex items-center gap-4 ml-auto">
-                <button className="flex items-center gap-2 text-text-secondary hover:text-primary font-medium px-4 py-2 rounded-lg transition-colors">
-                    Bill
-                </button>
-                <button className="flex items-center gap-2 text-primary font-bold px-4 py-2 rounded-lg transition-colors bg-primary/10">
-                    Action
-                </button>
-            </div>
-        </div>
+            {/* Spacer to push User and More to the end of the left section */}
+            <div className="flex-1" />
+
+            {/* User Section (at the end of left section) */}
+            <NavigationBarItem
+                label="Jack Johnson"
+                showIcon={false}
+                isActive={activeTab === 'User'}
+                onClick={() => setActiveTab('User')}
+            />
+
+            {/* More Item (at the end of left section) */}
+            <NavigationBarItem
+                icon={<MoreHorizontal className="size-5" />}
+                label="More"
+                showIcon={false}
+                isActive={activeTab === 'More'}
+                onClick={() => setActiveTab('More')}
+            />
+        </NavigationBar>
     );
 }

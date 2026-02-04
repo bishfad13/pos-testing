@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useOrder } from '../../context/OrderContext';
+import { useSnackbar } from '../../context/SnackbarContext';
 import CategoriesView from './CategoriesView';
 import MenuItemsView from './MenuItemsView';
 import SearchResultsView from './SearchResultsView';
@@ -46,6 +47,7 @@ interface CategorySectionProps {
 
 export default function CategorySection({ searchQuery = '', onClearSearch }: CategorySectionProps) {
     const { addItemToCategory } = useOrder();
+    const { showSnackbar } = useSnackbar();
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
     // Filter menu items by search query (name only)
@@ -75,6 +77,7 @@ export default function CategorySection({ searchQuery = '', onClearSearch }: Cat
             note: '',
             variantName: ''
         }, item.category);
+        showSnackbar('Item has been added to cart');
     };
 
     const handleClearSearch = () => {

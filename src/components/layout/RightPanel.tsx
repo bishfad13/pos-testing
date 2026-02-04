@@ -3,8 +3,8 @@ import TopBar from './TopBar';
 import OrderGroup from './OrderGroup';
 import BottomBar from '../BottomBar';
 import { useOrder } from '../../context/OrderContext';
+import { useSnackbar } from '../../context/SnackbarContext';
 import SelectionFloatingBar from './SelectionFloatingBar';
-import Snackbar from '../common/Snackbar';
 import Modal from '../common/Modal';
 
 export default function RightPanel() {
@@ -22,6 +22,8 @@ export default function RightPanel() {
         lastAddedGroupId,
         clearLastAddedGroupId
     } = useOrder();
+
+    const { showSnackbar } = useSnackbar();
 
     const [showBars, setShowBars] = useState(true);
     const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(new Set());
@@ -51,10 +53,13 @@ export default function RightPanel() {
         }
     }, [lastAddedGroupId, clearLastAddedGroupId]);
 
-    // Auto-hide snackbar handled in component, but we can reset state here
-    const handleCloseSnackbar = () => {
-        setFireSuccess(false);
-    };
+    // Show snackbar when fire succeeds and reset order context state
+    useEffect(() => {
+        if (fireSuccess) {
+            showSnackbar('Fired to kitchen');
+            setFireSuccess(false);
+        }
+    }, [fireSuccess, showSnackbar, setFireSuccess]);
 
     const handleCloseGroup = () => {
         if (hasUnsavedChanges) {
@@ -155,13 +160,6 @@ export default function RightPanel() {
 
             {/* Selection Floating Bar */}
             {(isSelectionMode || isGroupSelectionMode) && <SelectionFloatingBar />}
-
-            {/* Success Snackbar */}
-            <Snackbar
-                isOpen={fireSuccess}
-                message="Fired to kitchen"
-                onClose={handleCloseSnackbar}
-            />
 
             {/* Exit Confirmation Modal */}
             <Modal

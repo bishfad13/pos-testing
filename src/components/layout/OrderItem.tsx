@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { type OrderItem as OrderItemType, useOrder } from '../../context/OrderContext';
 import { Trash2, CheckCircle2 } from 'lucide-react';
 import { motion, useMotionValue, useTransform, type PanInfo } from 'framer-motion';
@@ -21,7 +21,6 @@ export default function OrderItem({ item, groupId, showIndividualControls = fals
         toggleItemSelection,
         selectedItemIds,
         toggleItemStatus,
-        activeGroupId,
         canEditGroup
     } = useOrder();
 
@@ -49,7 +48,6 @@ export default function OrderItem({ item, groupId, showIndividualControls = fals
     const isEditable = canEditGroup(groupId);
     // Interactive: Not fired (sent & fired). If hasBeenFired, it's totally locked.
     const isInteractive = !item.hasBeenFired;
-    const [isHolding, setIsHolding] = useState(false);
 
     // --- Sortable Setup ---
     const {
@@ -81,7 +79,6 @@ export default function OrderItem({ item, groupId, showIndividualControls = fals
         pointerStartPos.current = { x: e.clientX, y: e.clientY };
         hasMoved.current = false;
         longPressTriggered.current = false;
-        setIsHolding(true);
 
         longPressTimer.current = setTimeout(() => {
             if (!hasMoved.current) {
@@ -100,7 +97,6 @@ export default function OrderItem({ item, groupId, showIndividualControls = fals
 
         if (distance > 10) {
             hasMoved.current = true;
-            setIsHolding(false);
             if (longPressTimer.current) {
                 clearTimeout(longPressTimer.current);
                 longPressTimer.current = null;
@@ -109,7 +105,6 @@ export default function OrderItem({ item, groupId, showIndividualControls = fals
     };
 
     const handlePointerUp = () => {
-        setIsHolding(false);
         if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
             longPressTimer.current = null;
@@ -149,10 +144,11 @@ export default function OrderItem({ item, groupId, showIndividualControls = fals
     const isCombo = item.subItems && item.subItems.length > 0;
 
     // Determine if toggle should be shown
-    // In active group mode: Show toggles only if distributed (showIndividualControls)
-    // In default view mode: Show toggles on held items so they can be toggled back to fire
+    // Individual toggles are shown ONLY if:
+    // 1. Group is explicitly in "distributed" (separated) mode
+    // 2. OR it is a Combo item (combos always need individual control)
     // CRITICAL: NEVER show toggle if item has actually been fired to kitchen (hasBeenFired).
-    const showToggle = !isSelectionMode && !item.hasBeenFired && (showIndividualControls || (item.isSent && !item.isFired && !activeGroupId));
+    const showToggle = !isSelectionMode && !item.hasBeenFired && (showIndividualControls || isCombo);
 
     return (
         <div ref={setNodeRef} style={style} className="relative w-full group overflow-hidden rounded-lg touch-none">
@@ -185,7 +181,6 @@ export default function OrderItem({ item, groupId, showIndividualControls = fals
                 className={`
                     relative w-full p-2 z-10 flex h-auto flex-row items-start gap-2 rounded-lg transition-transform duration-200
                     ${isSelectionMode ? (item.hasBeenFired ? 'opacity-50' : 'cursor-pointer') : ''}
-                    ${isHolding ? 'bg-blue-100' : ''}
                     ${!isInteractive ? 'bg-gray-50/60' : ''} 
                 `}
             >

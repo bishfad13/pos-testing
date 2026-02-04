@@ -46,14 +46,14 @@ export default function Card({
                 isSelected &&
                 "border-2 border-primary bg-surface",
                 !isSelected && variant === "default" && state !== "disabled" && "hover:bg-surface/90",
-                // Fallback for hover if not using framer's whileHover for bg, but we will use framer for scale
+                !isSelected && state === "enabled" && "hover:bg-black/[0.08]",
                 className
             )}
             initial={false}
             animate={{
                 scale: state === "dragged" ? 1.05 : 1,
             }}
-            whileHover={state === "enabled" && !selected ? { y: -4, boxShadow: "0px 10px 20px rgba(0,0,0,0.1)" } : {}}
+            whileHover={state === "enabled" && !selected ? {} : {}}
             whileTap={state === "enabled" ? { scale: 0.98 } : {}}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
             {...props}

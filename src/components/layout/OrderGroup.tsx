@@ -16,7 +16,7 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 
 interface OrderGroupProps {
     group: OrderGroupType;
@@ -39,12 +39,10 @@ export default function OrderGroup({ group, isExpanded, isActive = false, onTogg
     const itemCount = group.items.reduce((acc, item) => acc + item.qty, 0);
 
     // Long-press state for group header
-    const [isHolding, setIsHolding] = useState(false);
     const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const longPressTriggered = useRef(false);
     const pointerStartPos = useRef<{ x: number; y: number } | null>(null);
     const hasMoved = useRef(false);
-
     // Check if any item is a Combo
     const hasCombos = group.items.some(item => item.subItems && item.subItems.length > 0);
 
@@ -77,7 +75,6 @@ export default function OrderGroup({ group, isExpanded, isActive = false, onTogg
         pointerStartPos.current = { x: e.clientX, y: e.clientY };
         hasMoved.current = false;
         longPressTriggered.current = false;
-        setIsHolding(true);
 
         longPressTimer.current = setTimeout(() => {
             // Only trigger if user hasn't moved
@@ -99,7 +96,6 @@ export default function OrderGroup({ group, isExpanded, isActive = false, onTogg
         // If moved more than 10px, cancel long press
         if (distance > 10) {
             hasMoved.current = true;
-            setIsHolding(false);
             if (longPressTimer.current) {
                 clearTimeout(longPressTimer.current);
                 longPressTimer.current = null;
@@ -108,7 +104,6 @@ export default function OrderGroup({ group, isExpanded, isActive = false, onTogg
     };
 
     const handlePointerUp = () => {
-        setIsHolding(false);
         if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
             longPressTimer.current = null;
@@ -160,7 +155,7 @@ export default function OrderGroup({ group, isExpanded, isActive = false, onTogg
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
-                className={`w-full p-2 flex items-start justify-between transition-colors ${isHolding ? 'bg-blue-50' : ''}`}
+                className={`w-full p-2 flex items-start justify-between transition-colors`}
             >
                 <div onClick={handleHeaderClick} className="flex-1">
                     <div className="flex items-center gap-2">
@@ -173,33 +168,35 @@ export default function OrderGroup({ group, isExpanded, isActive = false, onTogg
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {!hasCombos && !group.hasDistributedToggles && isActive && (
+                    {!group.hasDistributedToggles && !allItemsCompleted && (
                         <>
-                            <div
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (hasItems) handleBulkFire(true);
-                                }}
-                                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${!isEditable || !hasItems
-                                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                                    : isGroupFired
-                                        ? 'bg-[#f8eadd] text-[#cd4631] cursor-pointer hover:brightness-95'
-                                        : 'bg-[#f9dedc] text-gray-400 cursor-pointer hover:brightness-95'
-                                    }`}
-                            >
-                                <Flame className={`w-5 h-5 ${isGroupFired ? 'fill-current' : ''}`} />
-                            </div>
                             <div
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (hasItems) handleBulkFire(false);
                                 }}
-                                className={`w-10 h-10 rounded-lg flex items-center justify-center border transition-colors ${!isEditable || !hasItems
+                                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${!isEditable || !hasItems
                                     ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
-                                    : 'text-text-primary border-gray-200 cursor-pointer hover:bg-gray-50'
+                                    : !isGroupFired && hasItems
+                                        ? 'bg-black/16 text-text-primary cursor-pointer hover:brightness-95 shadow-sm'
+                                        : 'text-text-primary border border-gray-200 cursor-pointer hover:bg-gray-50'
                                     }`}
                             >
                                 <Hand className="w-5 h-5" />
+                            </div>
+                            <div
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (hasItems) handleBulkFire(true);
+                                }}
+                                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${!isEditable || !hasItems
+                                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                    : isGroupFired
+                                        ? 'bg-red-500 text-white cursor-pointer hover:brightness-110 shadow-sm'
+                                        : 'bg-white border border-gray-200 text-text-primary cursor-pointer hover:bg-gray-50'
+                                    }`}
+                            >
+                                <Flame className={`w-5 h-5 ${isGroupFired ? 'fill-current' : ''}`} />
                             </div>
                         </>
                     )}
@@ -233,7 +230,7 @@ export default function OrderGroup({ group, isExpanded, isActive = false, onTogg
                                         key={item.id}
                                         item={item}
                                         groupId={group.id}
-                                        showIndividualControls={isActive && (hasCombos || group.hasDistributedToggles)}
+                                        showIndividualControls={(isActive && hasCombos) || group.hasDistributedToggles}
                                     />
                                 ))}
                             </div>
@@ -254,7 +251,7 @@ export default function OrderGroup({ group, isExpanded, isActive = false, onTogg
             onPointerCancel={handlePointerUp}
             onClick={handleHeaderClick}
             selected={isActive || isGroupSelected}
-            className={`p-4 flex flex-row items-center justify-between cursor-pointer transition-colors shrink-0 h-auto w-full mb-4 ${isHolding ? 'bg-blue-50' : ''}`}
+            className={`p-4 flex flex-row items-center justify-between cursor-pointer transition-colors shrink-0 h-auto w-full mb-4`}
         >
             <div>
                 <div className="flex items-center gap-2">
@@ -269,14 +266,48 @@ export default function OrderGroup({ group, isExpanded, isActive = false, onTogg
                     {itemCount} items
                 </p>
             </div>
-            <div
-                className="flex items-center justify-center rotate-180 text-text-secondary p-2 -mr-2 z-10"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onToggle();
-                }}
-            >
-                <ChevronUp className="w-6 h-6" />
+            <div className="flex items-center gap-2">
+                {!group.hasDistributedToggles && !allItemsCompleted && (
+                    <div className="flex items-center gap-2 mr-2">
+                        <div
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (hasItems) handleBulkFire(false);
+                            }}
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${!isEditable || !hasItems
+                                ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
+                                : !isGroupFired && hasItems
+                                    ? 'bg-black/16 text-text-primary cursor-pointer hover:brightness-95 shadow-sm'
+                                    : 'text-text-primary border border-gray-200 cursor-pointer hover:bg-gray-50'
+                                }`}
+                        >
+                            <Hand className="w-5 h-5" />
+                        </div>
+                        <div
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (hasItems) handleBulkFire(true);
+                            }}
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${!isEditable || !hasItems
+                                ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                : isGroupFired
+                                    ? 'bg-red-500 text-white cursor-pointer hover:brightness-110 shadow-sm'
+                                    : 'bg-white border border-gray-200 text-text-primary cursor-pointer hover:bg-gray-50'
+                                }`}
+                        >
+                            <Flame className={`w-5 h-5 ${isGroupFired ? 'fill-current' : ''}`} />
+                        </div>
+                    </div>
+                )}
+                <div
+                    className="flex items-center justify-center rotate-180 text-text-secondary p-2 -mr-2 z-10"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onToggle();
+                    }}
+                >
+                    <ChevronUp className="w-6 h-6" />
+                </div>
             </div>
         </Card>
     );

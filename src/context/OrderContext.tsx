@@ -492,38 +492,41 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const clearLastAddedGroupId = () => setLastAddedGroupId(null);
 
     const fireToKitchen = () => {
-        // Fire to kitchen processes ALL groups, not just the active one
-        // For each group, send items that are:
-        // 1. Marked as "Fire" (isFired: true)
-        // 2. In a group that is editable (canEditGroup passes)
+        // Fire to kitchen processes ALL groups
+        // ALL unsent items get marked as isSent: true (protected from discard)
+        // Only items in editable groups get their hasBeenFired status updated based on isFired
 
         setOrderGroups(prev => prev.map(group => {
-            // Only process groups that are editable
-            if (!canEditGroup(group.id)) return group;
+            const isEditable = canEditGroup(group.id);
 
             return {
                 ...group,
                 items: group.items.map(item => {
-                    // Send ALL items to kitchen (both Fire and Hold)
-                    // This marks them as persisted so they cannot be deleted
+                    // Skip items that are already sent and have their hasBeenFired status finalized
+                    if (item.isSent && (!item.isFired || item.hasBeenFired)) {
+                        return item;
+                    }
 
-                    // Logic:
-                    // 1. Always mark as Sent (isSent = true)
-                    // 2. If isFired is true (intent is to Fire), then mark hasBeenFired = true
+                    // For editable groups: update both isSent and hasBeenFired based on fire intent
+                    if (isEditable) {
+                        const hasBeenFired = item.hasBeenFired || item.isFired;
 
-                    const isNowSent = true;
-                    // Strict check: hasBeenFired is only true if it WAS already fired OR if we are currently firing it.
-                    const hasBeenFired = item.hasBeenFired || item.isFired;
+                        if (!item.isSent || (item.isSent && item.isFired && !item.hasBeenFired)) {
+                            return {
+                                ...item,
+                                isSent: true,
+                                hasBeenFired: hasBeenFired
+                            };
+                        }
+                        return item;
+                    }
 
-                    // Check if we need to update the item
-                    // Update if:
-                    // - It wasn't sent before (!item.isSent)
-                    // - OR It was sent, but we are now firing it (item.isFired) and it wasn't fired before (!item.hasBeenFired)
-                    if (!item.isSent || (item.isSent && item.isFired && !item.hasBeenFired)) {
+                    // For locked groups: only mark as isSent to protect from discard
+                    // Do NOT update hasBeenFired - that will be done when the group becomes editable
+                    if (!item.isSent) {
                         return {
                             ...item,
-                            isSent: isNowSent,
-                            hasBeenFired: hasBeenFired
+                            isSent: true
                         };
                     }
                     return item;
@@ -532,7 +535,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         }));
 
         setFireSuccess(true);
-        setActiveGroupId(null); // Return to default view
+        setActiveGroupId(null); // Return to Bill state after firing
     };
 
     // Validation
@@ -548,19 +551,21 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         for (let i = 0; i < index; i++) {
             const prevGroup = orderGroups[i];
 
+            // NEW RULE: Empty groups do NOT block next groups.
+            // If a group is empty, it's considered "skipped" rather than "blocking".
+            if (prevGroup.items.length === 0) {
+                continue;
+            }
+
             // Get only items that have been sent to kitchen
             const sentItems = prevGroup.items.filter(item => item.isSent);
 
-            // If a previous group has NO sent items, it blocks the current group
-            // User must add items to previous groups first and fire them
-            if (sentItems.length === 0) {
-                return false; // No sent items in previous group blocks current group
+            // If a previous group has NO sent items (but HAS items in draft), it blocks
+            if (sentItems.length === 0 && prevGroup.items.length > 0) {
+                return false;
             }
 
             // Check if all SENT items have been FIRED to kitchen
-            // - hasBeenFired means the item was sent to kitchen WITH fire intent
-            // - Items on "Hold" (isSent but !hasBeenFired) will BLOCK unlock
-            // - New unsent items are IGNORED - they don't affect unlock
             const isGroupCompleted = sentItems.every(item => item.hasBeenFired);
             if (!isGroupCompleted) {
                 return false; // Found an incomplete previous group, so current group is locked

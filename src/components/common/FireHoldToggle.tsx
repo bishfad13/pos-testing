@@ -17,7 +17,7 @@ export default function FireHoldToggle({ isFired = false, onToggle, disabled = f
                     if (!disabled && isFired) onToggle();
                 }}
                 className={`w-8 h-8 rounded-md flex items-center justify-center transition-all ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'} ${!isFired
-                    ? 'bg-white text-gray-800 shadow-sm'
+                    ? 'bg-black/16 text-gray-800 shadow-sm'
                     : 'text-gray-400 hover:text-gray-600'
                     }`}
             >
@@ -31,11 +31,11 @@ export default function FireHoldToggle({ isFired = false, onToggle, disabled = f
                     if (!disabled && !isFired) onToggle();
                 }}
                 className={`w-8 h-8 rounded-md flex items-center justify-center transition-all ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'} ${isFired
-                    ? 'bg-[#f8eadd] text-[#cd4631] shadow-sm'
+                    ? 'bg-red-500 text-white shadow-sm'
                     : 'text-gray-400 hover:text-gray-600'
                     }`}
             >
-                <Flame className="w-4 h-4" />
+                <Flame className={`w-4 h-4 ${isFired ? 'fill-current' : ''}`} />
             </div>
         </div>
     );

@@ -9,6 +9,13 @@
   --color-text-secondary: #5f646a;
 
   --font-sans: "Plus Jakarta Sans", sans-serif;
+
+  /* Navigation Specific Tokens */
+  --color-nav-active: #4f54e3;
+  --color-nav-hover: #f1f2f4;
+  --color-nav-pressed: #e9eaec;
+  --color-badge-bg: #ef4444;
+  --color-text-tertiary: #767c84;
 }
 
 @utility bg-surface {
