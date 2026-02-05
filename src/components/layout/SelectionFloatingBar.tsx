@@ -32,6 +32,8 @@ export default function SelectionFloatingBar() {
     // Group selection mode logic
     const hasDistributedToggles = selectedGroup?.hasDistributedToggles || false;
     const hasComboItems = selectedGroup?.items.some(item => item.subItems && item.subItems.length > 0) || false;
+    const hasFiredItems = selectedGroup?.items.some(item => item.hasBeenFired) || false;
+    const isToggleActionDisabled = hasComboItems || hasFiredItems;
 
     return (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
@@ -41,7 +43,7 @@ export default function SelectionFloatingBar() {
                     <>
                         <button
                             onClick={() => {
-                                if (selectedGroupId && !hasComboItems) {
+                                if (selectedGroupId && !isToggleActionDisabled) {
                                     if (hasDistributedToggles) {
                                         combineGroupFireHold(selectedGroupId);
                                     } else {
@@ -49,8 +51,8 @@ export default function SelectionFloatingBar() {
                                     }
                                 }
                             }}
-                            disabled={hasComboItems}
-                            className={`flex items-center gap-2 px-4 py-1 rounded-lg transition-colors ${hasComboItems
+                            disabled={isToggleActionDisabled}
+                            className={`flex items-center gap-2 px-4 py-1 rounded-lg transition-colors ${isToggleActionDisabled
                                 ? 'text-gray-300 cursor-not-allowed'
                                 : 'text-[#4f54e3] hover:bg-blue-50'
                                 }`}
